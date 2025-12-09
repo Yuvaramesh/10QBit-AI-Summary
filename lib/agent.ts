@@ -15,11 +15,40 @@ export async function handleQuiz(
 
     const inputStr = JSON.stringify(payload, null, 2);
 
-    const prompt = `You are an AI assistant specialized in summarizing patient quiz data. 
-Analyze the quiz data and respond ONLY with valid JSON in this exact format:
-{"summary_text": "Brief summary here", "structured_summary": {"key": "value"}}
+    const prompt = `You are an AI assistant specialized in summarizing patient quiz data with a focus on BMI calculations and health metrics.
 
-Quiz data to summarize:
+IMPORTANT: When analyzing the quiz data, you must:
+1. Extract weight information: previous weight and latest/current weight
+2. Extract height information: previous height and current/latest height
+3. Calculate BMI for both previous and current measurements using the formula: BMI = weight (kg) / (height (m))²
+4. Compare the BMI values and note any significant changes
+5. Provide health insights based on BMI categories:
+   - Underweight: BMI < 18.5
+   - Normal weight: BMI 18.5 - 24.9
+   - Overweight: BMI 25 - 29.9
+   - Obese: BMI ≥ 30
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "summary_text": "Brief summary including BMI analysis, weight changes, and health recommendations",
+  "structured_summary": {
+    "previous_weight": "value with unit",
+    "current_weight": "value with unit",
+    "weight_change": "value with unit",
+    "previous_height": "value with unit",
+    "current_height": "value with unit",
+    "previous_bmi": "calculated value",
+    "current_bmi": "calculated value",
+    "bmi_change": "calculated difference",
+    "previous_bmi_category": "category name",
+    "current_bmi_category": "category name",
+    "health_status": "assessment",
+    "recommendations": ["recommendation1", "recommendation2"],
+    "other_key_findings": {}
+  }
+}
+
+Quiz data to analyze:
 ${inputStr}`;
 
     const response = await fetch(
