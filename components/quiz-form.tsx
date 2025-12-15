@@ -23,9 +23,7 @@ export function QuizForm() {
 
   const [formData, setFormData] = useState({
     patient_id: "",
-    quiz_id: "",
-    uuid: "",
-    order_id: "",
+
     session_answers: "",
   });
 
@@ -55,9 +53,7 @@ export function QuizForm() {
 
       const payload: QuizRequest = {
         patient_id: formData.patient_id,
-        quiz_id: Number.parseInt(formData.quiz_id, 10),
-        uuid: formData.uuid,
-        order_id: Number.parseInt(formData.order_id, 10),
+
         session_answers: answers,
       };
 
@@ -101,44 +97,6 @@ export function QuizForm() {
                   value={formData.patient_id}
                   onChange={handleInputChange}
                   placeholder="e.g., P12345"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="quiz_id">Quiz ID</Label>
-                <Input
-                  id="quiz_id"
-                  name="quiz_id"
-                  type="number"
-                  value={formData.quiz_id}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 1"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="uuid">UUID</Label>
-                <Input
-                  id="uuid"
-                  name="uuid"
-                  value={formData.uuid}
-                  onChange={handleInputChange}
-                  placeholder="e.g., abc-123-def"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="order_id">Order ID</Label>
-                <Input
-                  id="order_id"
-                  name="order_id"
-                  type="number"
-                  value={formData.order_id}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 5001"
                   required
                 />
               </div>

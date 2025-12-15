@@ -6,22 +6,49 @@ export async function POST(request: Request) {
     const body = (await request.json()) as QuizRequest;
 
     // Validate required fields
-    if (!body.patient_id || !body.quiz_id) {
+    if (!body.patient_id) {
       return Response.json(
-        { error: "Missing required fields: patient_id or quiz_id" },
+        { error: "Missing required field: patient_id" },
         { status: 400 }
       );
     }
 
+    if (!body.session_answers) {
+      return Response.json(
+        { error: "Missing required field: session_answers" },
+        { status: 400 }
+      );
+    }
+
+    // Prepare the payload for the agent
+    // If session_answers is already an object with the full structure, use it directly
+    // Otherwise, wrap it in the expected format
+    let payload = body.session_answers;
+
+    // If session_answers doesn't have the expected structure, wrap it
+    if (
+      typeof payload === "object" &&
+      !payload.main_quiz &&
+      !payload.order_quiz
+    ) {
+      payload = {
+        patient_id: body.patient_id,
+        ...payload,
+      };
+    } else if (typeof payload === "object") {
+      // It already has the structure, just ensure patient_id matches
+      payload.patient_id = body.patient_id;
+    }
+
     // Call the agent with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     try {
-      const result = await handleQuiz(body);
+      const result = await handleQuiz(payload);
 
       const response: QuizResponse = {
-        agent: "AI-Quiz-Agent-v1",
+        agent: "AI-Medical-Summary-Agent-v2",
         summary: result.summary_text,
         structured_summary: result.structured_summary,
         timestamp: new Date().toISOString(),
@@ -39,11 +66,19 @@ export async function POST(request: Request) {
 
     if (errorMessage.includes("abort")) {
       return Response.json(
-        { error: "Quiz processing timed out" },
+        { error: "Quiz processing timed out after 30 seconds" },
         { status: 504 }
       );
     }
 
-    return Response.json({ error: errorMessage }, { status: 500 });
+    console.error("[API] Error processing quiz:", errorMessage);
+
+    return Response.json(
+      {
+        error: errorMessage,
+        details: "Failed to process medical quiz data",
+      },
+      { status: 500 }
+    );
   }
 }
