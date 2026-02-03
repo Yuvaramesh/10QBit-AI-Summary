@@ -12,9 +12,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 
 export function QuizForm() {
   const [loading, setLoading] = useState(false);
@@ -22,18 +22,12 @@ export function QuizForm() {
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    patient_id: "",
-    quiz_id: "",
-    uuid: "",
-    order_id: "",
-    session_answers: "",
+    jsonPayload: "",
   });
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const { value } = e.target;
+    setFormData({ jsonPayload: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,23 +37,13 @@ export function QuizForm() {
     setResponse(null);
 
     try {
-      // Parse session_answers as JSON or split by lines
-      let answers;
+      // Parse the JSON payload
+      let payload: QuizRequest;
       try {
-        answers = JSON.parse(formData.session_answers);
-      } catch {
-        answers = formData.session_answers
-          .split("\n")
-          .filter((line) => line.trim());
+        payload = JSON.parse(formData.jsonPayload);
+      } catch (parseError) {
+        throw new Error("Invalid JSON format. Please check your input.");
       }
-
-      const payload: QuizRequest = {
-        patient_id: formData.patient_id,
-        quiz_id: Number.parseInt(formData.quiz_id, 10),
-        uuid: formData.uuid,
-        order_id: Number.parseInt(formData.order_id, 10),
-        session_answers: answers,
-      };
 
       const res = await fetch("/api/quiz", {
         method: "POST",
@@ -81,80 +65,143 @@ export function QuizForm() {
     }
   };
 
+  const ValidationCheck = ({
+    label,
+    validated,
+    present,
+    issues,
+    details,
+  }: {
+    label: string;
+    validated: boolean;
+    present: boolean;
+    issues?: string[];
+    details?: any;
+  }) => (
+    <div className="border rounded-lg p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="font-medium text-sm">{label}</span>
+        <div className="flex gap-2">
+          {validated ? (
+            <div className="flex items-center gap-1 text-green-600">
+              <CheckCircle2 className="w-4 h-4" />
+              <span className="text-xs">Validated</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-red-600">
+              <XCircle className="w-4 h-4" />
+              <span className="text-xs">Not Validated</span>
+            </div>
+          )}
+          {present ? (
+            <div className="flex items-center gap-1 text-green-600">
+              <CheckCircle2 className="w-4 h-4" />
+              <span className="text-xs">Present</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-amber-600">
+              <AlertCircle className="w-4 h-4" />
+              <span className="text-xs">Missing</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {details && (
+        <div className="text-xs bg-secondary/50 p-2 rounded">
+          <pre className="overflow-auto max-h-24">
+            {JSON.stringify(details, null, 2)}
+          </pre>
+        </div>
+      )}
+
+      {issues && issues.length > 0 && (
+        <div className="space-y-1">
+          {issues.map((issue, idx) => (
+            <div
+              key={idx}
+              className="text-xs text-red-600 flex items-start gap-1"
+            >
+              <XCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+              <span>{issue}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const examplePayload = {
+    patient_id: 137,
+    main_quiz: {
+      updated_at: "2025-11-05T16:53:21+00:00",
+      answers: [
+        {
+          question_id: 1,
+          question_title: "Please tell us your age.",
+          answer_text: "18 to 74",
+        },
+        {
+          question_id: 6,
+          question_title: "Please add your height and current weight.",
+          answer_text:
+            '{"height_cm":"171","weight_kg":"81","bmi":27.70083102493075}',
+        },
+      ],
+    },
+    order_quiz: {
+      updated_at: "2025-11-06T15:35:13+00:00",
+      answers: [
+        {
+          question_id: 77,
+          question_title: "What is your current weight?",
+          answer_text: '{"weight_kg":"78.00"}',
+        },
+      ],
+    },
+    order_history: {
+      total_orders: 2,
+      orders: [
+        {
+          order_id: 111,
+          product: "Mounjaro",
+          product_plan: "1 month",
+          dosage: "2.5mg",
+          order_created_at: "2025-11-06T15:36:11+00:00",
+          order_state: "clinicalCheck",
+        },
+      ],
+    },
+  };
+
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-6">
+    <div className="w-full max-w-4xl mx-auto space-y-6">
       <Card className="border-primary/20">
         <CardHeader>
           <CardTitle className="text-2xl">Quiz Summary Agent</CardTitle>
           <CardDescription>
-            Submit quiz data to get AI-powered summaries
+            Paste your complete quiz JSON payload to get AI-powered summaries
+            with validation
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="patient_id">Patient ID</Label>
-                <Input
-                  id="patient_id"
-                  name="patient_id"
-                  value={formData.patient_id}
-                  onChange={handleInputChange}
-                  placeholder="e.g., P12345"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="quiz_id">Quiz ID</Label>
-                <Input
-                  id="quiz_id"
-                  name="quiz_id"
-                  type="number"
-                  value={formData.quiz_id}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 1"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="uuid">UUID</Label>
-                <Input
-                  id="uuid"
-                  name="uuid"
-                  value={formData.uuid}
-                  onChange={handleInputChange}
-                  placeholder="e.g., abc-123-def"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="order_id">Order ID</Label>
-                <Input
-                  id="order_id"
-                  name="order_id"
-                  type="number"
-                  value={formData.order_id}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 5001"
-                  required
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="session_answers">Session Answers</Label>
+              <Label htmlFor="jsonPayload">JSON Payload</Label>
               <Textarea
-                id="session_answers"
-                name="session_answers"
-                value={formData.session_answers}
+                id="jsonPayload"
+                name="jsonPayload"
+                value={formData.jsonPayload}
                 onChange={handleInputChange}
-                placeholder="Enter answers as JSON array or line-separated text&#10;Example: [&#34;answer1&#34;, &#34;answer2&#34;] or&#10;answer1&#10;answer2"
-                rows={5}
+                placeholder={JSON.stringify(examplePayload, null, 2)}
+                rows={15}
                 required
+                className="font-mono text-xs"
               />
+              <p className="text-xs text-muted-foreground">
+                Paste the complete JSON payload including patient_id, main_quiz,
+                order_quiz, and order_history
+              </p>
             </div>
 
             <Button
@@ -162,7 +209,7 @@ export function QuizForm() {
               disabled={loading}
               className="w-full bg-primary hover:bg-primary/90"
             >
-              {loading ? "Processing..." : "Summarize Quiz"}
+              {loading ? "Processing..." : "Analyze Quiz Data"}
             </Button>
           </form>
         </CardContent>
@@ -179,32 +226,112 @@ export function QuizForm() {
         </Card>
       )}
 
-      {response && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-lg">Summary Results</CardTitle>
-            <CardDescription>{response.timestamp}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h3 className="font-semibold text-sm mb-2">Summary</h3>
-              <p className="text-sm leading-relaxed text-foreground/80">
-                {response.summary}
+      {response && response.validation_status && (
+        <>
+          {/* Validation Status Card */}
+          <Card className="border-blue-500/20 bg-blue-500/5">
+            <CardHeader>
+              <CardTitle className="text-lg">Validation Status</CardTitle>
+              <CardDescription>
+                Automated checks for data quality and completeness
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <ValidationCheck
+                label="BMI Calculations"
+                validated={
+                  response.validation_status.bmi_check?.validated ?? false
+                }
+                present={
+                  response.validation_status.bmi_check?.present_in_summary ??
+                  false
+                }
+                issues={response.validation_status.bmi_check?.issues}
+                details={
+                  response.validation_status.bmi_check?.calculated_values
+                }
+              />
+
+              <ValidationCheck
+                label="Medication Names"
+                validated={
+                  response.validation_status.medicine_check?.validated ?? false
+                }
+                present={
+                  response.validation_status.medicine_check
+                    ?.present_in_summary ?? false
+                }
+                issues={response.validation_status.medicine_check?.issues}
+                details={{
+                  found:
+                    response.validation_status.medicine_check
+                      ?.found_medications,
+                  standardized:
+                    response.validation_status.medicine_check
+                      ?.standardized_names,
+                }}
+              />
+
+              <ValidationCheck
+                label="Medication Dosages"
+                validated={
+                  response.validation_status.dosage_check?.validated ?? false
+                }
+                present={
+                  response.validation_status.dosage_check?.present_in_summary ??
+                  false
+                }
+                issues={response.validation_status.dosage_check?.issues}
+                details={response.validation_status.dosage_check?.found_dosages}
+              />
+
+              <ValidationCheck
+                label="Patient Identifiers"
+                validated={
+                  response.validation_status.id_check?.validated ?? false
+                }
+                present={
+                  response.validation_status.id_check?.present_in_summary ??
+                  false
+                }
+                issues={response.validation_status.id_check?.issues}
+                details={{
+                  patient_id: response.validation_status.id_check?.patient_id,
+                  quiz_id: response.validation_status.id_check?.quiz_id,
+                  uuid: response.validation_status.id_check?.uuid,
+                  order_id: response.validation_status.id_check?.order_id,
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Summary Results Card */}
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="text-lg">Summary Results</CardTitle>
+              <CardDescription>{response.timestamp}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-sm mb-2">Summary</h3>
+                <div className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap">
+                  {response.summary}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-sm mb-2">Structured Data</h3>
+                <pre className="bg-secondary/50 p-3 rounded text-xs overflow-auto max-h-96">
+                  {JSON.stringify(response.structured_summary, null, 2)}
+                </pre>
+              </div>
+
+              <p className="text-xs text-foreground/60">
+                Agent: {response.agent}
               </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-sm mb-2">Structured Data</h3>
-              <pre className="bg-secondary/50 p-3 rounded text-xs overflow-auto max-h-48">
-                {JSON.stringify(response.structured_summary, null, 2)}
-              </pre>
-            </div>
-
-            <p className="text-xs text-foreground/60">
-              Agent: {response.agent}
-            </p>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   );

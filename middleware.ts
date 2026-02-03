@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 
 const allowedOrigins = [
   "https://alpha-admin-harley.10qbit.com",
+  "https://alpha-app-xflow.10qbit.com",
+  "https://alpha-admin-xflow.10qbit.com",
   "http://localhost:3000", // for local development
   "http://localhost:3001", // for local development
 ];

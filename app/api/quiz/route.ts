@@ -6,24 +6,25 @@ export async function POST(request: Request) {
     const body = (await request.json()) as QuizRequest;
 
     // Validate required fields
-    if (!body.patient_id || !body.quiz_id) {
+    if (!body.patient_id) {
       return Response.json(
-        { error: "Missing required fields: patient_id or quiz_id" },
-        { status: 400 }
+        { error: "Missing required field: patient_id" },
+        { status: 400 },
       );
     }
 
     // Call the agent with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     try {
       const result = await handleQuiz(body);
 
       const response: QuizResponse = {
-        agent: "AI-Quiz-Agent-v1",
+        agent: "AI-Quiz-Agent-v2",
         summary: result.summary_text,
         structured_summary: result.structured_summary,
+        validation_status: result.validation_status,
         timestamp: new Date().toISOString(),
       };
 
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
     if (errorMessage.includes("abort")) {
       return Response.json(
         { error: "Quiz processing timed out" },
-        { status: 504 }
+        { status: 504 },
       );
     }
 
