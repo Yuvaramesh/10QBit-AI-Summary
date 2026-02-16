@@ -629,8 +629,6 @@ ${inputStr}`;
     );
 
     if (!response.ok) {
-      const errorData = await response.json();
-      
       // Handle specific error codes gracefully
       if (response.status === 429) {
         throw new Error("SERVICE_QUOTA_EXCEEDED");
@@ -639,14 +637,16 @@ ${inputStr}`;
       if (response.status === 403) {
         throw new Error("SERVICE_PERMISSION_DENIED");
       }
+
+      if (response.status === 400) {
+        throw new Error("SERVICE_INVALID_API_KEY");
+      }
       
       if (response.status >= 500) {
         throw new Error("SERVICE_TEMPORARILY_UNAVAILABLE");
       }
       
-      throw new Error(
-        `Gemini API error: ${response.status} - ${JSON.stringify(errorData)}`,
-      );
+      throw new Error("SERVICE_UNKNOWN_ERROR");
     }
 
     const data = await response.json();
