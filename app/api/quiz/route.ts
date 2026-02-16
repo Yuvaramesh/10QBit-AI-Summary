@@ -38,13 +38,50 @@ export async function POST(request: Request) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
 
+    // Handle specific error codes with professional messages
+    if (errorMessage.includes("SERVICE_QUOTA_EXCEEDED")) {
+      return Response.json(
+        {
+          error:
+            "The AI service is temporarily unavailable due to high demand. Please try again in a few moments.",
+          code: "SERVICE_QUOTA_EXCEEDED",
+        },
+        { status: 503 },
+      );
+    }
+
+    if (errorMessage.includes("SERVICE_PERMISSION_DENIED")) {
+      return Response.json(
+        {
+          error:
+            "The AI service is currently unavailable. Please contact support if this persists.",
+          code: "SERVICE_PERMISSION_DENIED",
+        },
+        { status: 503 },
+      );
+    }
+
+    if (errorMessage.includes("SERVICE_TEMPORARILY_UNAVAILABLE")) {
+      return Response.json(
+        {
+          error:
+            "The AI service is temporarily unavailable. Please try again shortly.",
+          code: "SERVICE_TEMPORARILY_UNAVAILABLE",
+        },
+        { status: 503 },
+      );
+    }
+
     if (errorMessage.includes("abort")) {
       return Response.json(
-        { error: "Quiz processing timed out" },
+        { error: "Quiz processing timed out. Please try again." },
         { status: 504 },
       );
     }
 
-    return Response.json({ error: errorMessage }, { status: 500 });
+    return Response.json(
+      { error: "An error occurred while processing your request. Please try again." },
+      { status: 500 },
+    );
   }
 }

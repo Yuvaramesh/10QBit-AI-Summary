@@ -53,7 +53,10 @@ export function QuizForm() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
+        // Use the professional error message from API
+        const errorMessage =
+          errorData.error || "An error occurred while processing your request.";
+        throw new Error(errorMessage);
       }
 
       const data = (await res.json()) as QuizResponse;
