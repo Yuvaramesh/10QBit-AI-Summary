@@ -1,5 +1,6 @@
 import { handleQuiz } from "@/lib/agent";
 import type { QuizRequest, QuizResponse } from "@/types/quiz";
+import { createErrorResponse } from "@/lib/error-handler";
 
 export async function POST(request: Request) {
   try {
@@ -38,13 +39,24 @@ export async function POST(request: Request) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
 
+    // Handle timeout separately
     if (errorMessage.includes("abort")) {
       return Response.json(
-        { error: "Quiz processing timed out" },
+        { error: "Quiz processing timed out. Please try again." },
         { status: 504 },
       );
     }
 
-    return Response.json({ error: errorMessage }, { status: 500 });
+    // Use the centralized error handler for professional messages
+    const errorResponse = createErrorResponse(error);
+    const statusCode =
+      errorResponse.code === "SERVICE_QUOTA_EXCEEDED" ||
+      errorResponse.code === "SERVICE_PERMISSION_DENIED" ||
+      errorResponse.code === "SERVICE_TEMPORARILY_UNAVAILABLE" ||
+      errorResponse.code === "SERVICE_INVALID_API_KEY"
+        ? 503
+        : 500;
+
+    return Response.json(errorResponse, { status: statusCode });
   }
 }
